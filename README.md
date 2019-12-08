@@ -8,5 +8,5 @@
 - if everything looks good - apply your changes running command `terraform apply`
 
 ### 2. You should wait until the process is finished
-### 3. Then find **dev_ops_test_aws_instance_public_dns** scrolling up the output of the command
+### 3. Then find _dev_ops_test_aws_instance_public_dns_ scrolling up the output of the command
 ### 4. Visit this link and make sure that app works
