@@ -39,9 +39,8 @@ resource "aws_instance" "dev_ops_test_instance_east" {
   ami           = "ami-00068cd7555f543d5"
   instance_type = "t2.micro"
   key_name      = var.aws_key["name"]
-  provisioner "file" {
-    source      = "../app.gz"
-    destination = "~/"
+  provisioner "local-exec" {
+    command = "scp -o StrictHostKeyChecking=no -i ${var.aws_key["path"]} ../app.gz ec2-user@${self.public_dns}:~/"
   }
   provisioner "remote-exec" {
     connection {
@@ -58,12 +57,14 @@ resource "aws_instance" "dev_ops_test_instance_east" {
       "sudo chmod +x /usr/local/bin/docker-compose",
       "sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose",
       "sudo systemctl start docker",
+      "cd /home/ec2-user/",
       "tar -xzf app.zip",
       "cd app/",
-      "sudo docker-compose up"
+      "sudo docker-compose up",
+      "sudo docker-compose exec app php /home/socium/yii migrate  --interactive=0"
     ]
   }
-  depends_on    = [aws_db_instance.dev_ops_test_rds_east]
+  depends_on = [aws_db_instance.dev_ops_test_rds_east]
 }
 
 
