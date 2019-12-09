@@ -51,14 +51,13 @@ resource "aws_instance" "dev_ops_test_instance_east" {
     }
     inline = [
       "sudo yum -y update",
-      "sudotar -xzf app.zip yum install -y git",
+      "sudo yum install -y git",
       "sudo amazon-linux-extras install -y docker",
       "sudo curl -L https://github.com/docker/compose/releases/download/1.25.0/docker-compose-`uname -s`-`uname -m` | sudo tee /usr/local/bin/docker-compose > /dev/null",
       "sudo chmod +x /usr/local/bin/docker-compose",
       "sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose",
       "sudo systemctl start docker",
-      "cd /home/ec2-user/",
-      "tar -xzf app.zip",
+      "cd /home/ec2-user/ && tar -xzf app.gz",
       "cd app/",
       "sudo docker-compose up",
       "sudo docker-compose exec app php /home/socium/yii migrate  --interactive=0"
