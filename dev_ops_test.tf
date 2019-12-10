@@ -38,6 +38,9 @@ resource "aws_db_instance" "dev_ops_test_rds_east" {
 resource "aws_instance" "dev_ops_test_instance_east" {
   ami           = "ami-00068cd7555f543d5"
   instance_type = "t2.micro"
+  tags = {
+    Name = "dev_ops_test_instance_east"
+  }
   key_name      = var.aws_key["name"]
   provisioner "local-exec" {
     command = "scp -o StrictHostKeyChecking=no -i ${var.aws_key["path"]} ../app.gz ec2-user@${self.public_dns}:~/"
@@ -59,7 +62,7 @@ resource "aws_instance" "dev_ops_test_instance_east" {
       "sudo systemctl start docker",
       "cd /home/ec2-user/ && tar -xzf app.gz",
       "cd app/",
-      "sudo docker-compose up",
+      "sudo docker-compose up -d",
       "sudo docker-compose exec app php /home/socium/yii migrate  --interactive=0"
     ]
   }
