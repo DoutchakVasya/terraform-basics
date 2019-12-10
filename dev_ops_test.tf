@@ -41,10 +41,10 @@ resource "aws_instance" "dev_ops_test_instance_east" {
   tags = {
     Name = "dev_ops_test_instance_east"
   }
-  key_name      = var.aws_key["name"]
-  provisioner "local-exec" {
-    command = "scp -o StrictHostKeyChecking=no -i ${var.aws_key["path"]} ../app.gz ec2-user@${self.public_dns}:~/"
-  }
+  key_name = var.aws_key["name"]
+    provisioner "local-exec" {
+      command = "scp -o StrictHostKeyChecking=no -i ${var.aws_key["path"]} ../app.gz ec2-user@${self.public_dns}:~/"
+    }
   provisioner "remote-exec" {
     connection {
       type        = "ssh"
@@ -52,21 +52,80 @@ resource "aws_instance" "dev_ops_test_instance_east" {
       private_key = file(var.aws_key["path"])
       host        = self.public_dns
     }
-    inline = [
-      "sudo yum -y update",
-      "sudo yum install -y git",
-      "sudo amazon-linux-extras install -y docker",
-      "sudo curl -L https://github.com/docker/compose/releases/download/1.25.0/docker-compose-`uname -s`-`uname -m` | sudo tee /usr/local/bin/docker-compose > /dev/null",
-      "sudo chmod +x /usr/local/bin/docker-compose",
-      "sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose",
-      "sudo systemctl start docker",
-      "cd /home/ec2-user/ && tar -xzf app.gz",
-      "cd app/",
-      "sudo docker-compose up -d",
-      "sudo docker-compose exec app php /home/socium/yii migrate  --interactive=0"
-    ]
-  }
-  depends_on = [aws_db_instance.dev_ops_test_rds_east]
+        inline = [
+          // Update system
+          "sudo yum -y update",
+          "sudo yum install -y git",
+          // Install docker
+          "sudo amazon-linux-extras install -y docker",
+          // Getting docker-compose file
+          "sudo curl -L https://github.com/docker/compose/releases/download/1.25.0/docker-compose-`uname -s`-`uname -m` | sudo tee /usr/local/bin/docker-compose > /dev/null",
+          "sudo chmod +x /usr/local/bin/docker-compose",
+          "sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose",
+          "sudo systemctl start docker",
+          // unzip applicaton folder
+          "cd /home/ec2-user/ && tar -xzf app.gz",
+          "cd app/",
+          // Running application by docker-compose
+          "sudo docker-compose up -d",
+          // Running db migrations
+          "sudo docker-compose exec app php /home/socium/yii migrate  --interactive=0"
+        ]
+      }
+      depends_on = [aws_db_instance.dev_ops_test_rds_east]
+}
+
+resource "aws_cloudwatch_dashboard" "app" {
+  dashboard_name = "DevOps Dashboard RDS+EC2"
+
+  dashboard_body = <<EOF
+ {
+   "widgets": [
+       {
+          "type":"metric",
+          "x":0,
+          "y":0,
+          "width":12,
+          "height":6,
+          "properties":{
+             "metrics":[
+                [
+                   "AWS/EC2",
+                   "CPUUtilization",
+                   "InstanceId",
+                   "${aws_instance.dev_ops_test_instance_east.id}"
+                ]
+             ],
+             "period":300,
+             "stat":"Average",
+             "region":"us-east-1",
+             "title":"EC2 Instance CPU"
+          }
+       },
+       {
+          "type":"metric",
+          "x":0,
+          "y":0,
+          "width":12,
+          "height":6,
+          "properties":{
+             "metrics":[
+                [
+                   "AWS/RDS",
+                   "CPUUtilization",
+                   "InstanceId",
+                   "${aws_db_instance.dev_ops_test_rds_east.identifier}"
+                ]
+             ],
+             "period":300,
+             "stat":"Average",
+             "region":"us-east-1",
+             "title":"RDS Instance, CPU"
+          }
+       }
+   ]
+ }
+ EOF
 }
 
 
